@@ -4,6 +4,7 @@
  */
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbwIX-_eNoWcfPNqYAQMLXe0i_7CUAfkyXLNSA30SGY6BBTfA4e10GAVj1vi0qqRppdW3g/exec';
+// Versi cache frontend: naikkan angka ini setiap kali file diperbarui.
 
 const $ = id => document.getElementById(id);
 
@@ -102,6 +103,7 @@ document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === b));
   document.querySelectorAll('.page').forEach(p => p.classList.toggle('hidden', p.id !== 'page-' + b.dataset.page));
   
+  if (b.dataset.page === 'produk') loadProducts();
   if (b.dataset.page === 'kasir') renderCart();
   if (b.dataset.page === 'dashboard') loadDashboard();
   if (b.dataset.page === 'finance') loadFinance();
@@ -121,6 +123,7 @@ function updateHeaderClock() {
 }
 updateHeaderClock();
 setInterval(updateHeaderClock, 1000);
+setInterval(() => { if (state.password && !$('app').classList.contains('hidden')) loadProducts(); }, 30000);
 
 $('refreshProducts').onclick = loadProducts;
 if ($('productSearch')) $('productSearch').addEventListener('input', renderProducts);
@@ -137,25 +140,55 @@ async function loadProducts() {
 }
 
 function renderProducts() {
-  const query = String($('productSearch')?.value || '').trim().toLocaleLowerCase('id');
-  const visibleProducts = state.products.filter(p => String(p.nama || '').toLocaleLowerCase('id').includes(query));
-  if (!state.products.length) {
-    $('productGrid').innerHTML = '<p class="muted">Belum ada data produk. Tambahkan produk di sheet Produk.</p>';
+  const grid = $('productGrid');
+  if (!grid) return;
+  const q = ($('productSearch')?.value || '').trim().toLocaleLowerCase('id');
+  const products = state.products.filter(p => String(p.nama || '').toLocaleLowerCase('id').includes(q));
+  if (!products.length) {
+    grid.innerHTML = `<p class="muted">${q ? 'Barang tidak ditemukan.' : 'Belum ada data produk. Tambahkan produk di sheet Produk lalu tekan Muat ulang.'}</p>`;
     return;
   }
-  if (!visibleProducts.length) {
-    $('productGrid').innerHTML = '<p class="muted">Tidak ada barang yang cocok dengan pencarian “' + esc(query) + '”.</p>';
-    return;
-  }
-  
-  $('productGrid').innerHTML = visibleProducts.map(p => {
+  grid.innerHTML = products.map(p => {
     const name = String(p.nama || '').toLowerCase();
     const fallback = name.includes('telur') ? 'https://images.unsplash.com/photo-1506976785307-8732e854ad03?auto=format&fit=crop&w=600&q=80' : (name.includes('minyak') ? 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80' : (name.includes('beras') ? 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80' : 'https://placehold.co/600x400/eaf4f7/52666d?text=Foto+Produk'));
     const photo = p.foto || fallback;
-    
-    return `<article class="product-card"><img class="product-photo" src="${esc(photo)}" alt="Foto ${esc(p.nama)}" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/600x400/eaf4f7/52666d?text=Foto+Produk'"><div class="product-info"><div class="product-title-row"><h3>${esc(p.nama)}</h3><span class="stock">Stok: ${esc(p.stok)} ${esc(p.satuan)}</span></div><p>${esc(p.kategori || 'Barang')} · ${esc(p.keterangan || 'Tidak ada keterangan')}</p><div class="price">${rupiah(p.harga)} / ${esc(p.satuan || 'unit')}</div></div></article>`;
+    const stock = Number(p.stok) || 0;
+    return `<article class="product-card marketplace-card">
+      <img class="product-photo" src="${esc(photo)}" alt="Foto ${esc(p.nama)}" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/600x400/eaf4f7/52666d?text=Foto+Produk'">
+      <div class="product-info">
+        <h3 class="marketplace-title">${esc(p.nama)}</h3>
+        <div class="marketplace-stock ${stock <= 0 ? 'out-of-stock' : ''}">${stock > 0 ? `Stok tersedia: ${esc(stock)} ${esc(p.satuan || 'unit')}` : 'Stok habis'}</div>
+        <div class="price">${rupiah(p.harga)} <small>/ ${esc(p.satuan || 'unit')}</small></div>
+        <button type="button" class="primary marketplace-buy" data-buy-product="${esc(p.id)}" ${stock <= 0 ? 'disabled' : ''}>${stock > 0 ? 'Beli' : 'Stok habis'}</button>
+      </div>
+    </article>`;
   }).join('');
 }
+
+// Tombol Beli menambahkan 1 unit ke keranjang Kasir lalu membuka halaman order.
+$('productGrid')?.addEventListener('click', e => {
+  const button = e.target.closest('[data-buy-product]');
+  if (!button || button.disabled) return;
+  const p = state.products.find(x => String(x.id) === button.dataset.buyProduct);
+  if (!p) return alert('Data produk belum terbaru. Tekan Muat ulang.');
+  const available = Number(p.stok) || 0;
+  const existing = state.cart.find(x => String(x.id) === String(p.id));
+  const currentQty = existing ? Number(existing.qty) || 0 : 0;
+  if (available <= 0 || currentQty + 1 > available) return alert('Stok barang tidak mencukupi.');
+  if (existing) {
+    existing.qty += 1;
+    existing.harga = priceForQty(p, existing.qty);
+  } else {
+    state.cart.push({ id: p.id, nama: p.nama, satuan: p.satuan || 'unit', harga: priceForQty(p, 1), qty: 1 });
+  }
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.page === 'kasir'));
+  document.querySelectorAll('.page').forEach(x => x.classList.toggle('hidden', x.id !== 'page-kasir'));
+  renderCart();
+  $('itemSearch').value = '';
+  $('itemSelect').value = '';
+  $('itemQty').value = '';
+  updateSelectedProduct();
+});
 
 function fillProductSelect() {
   const old = $('itemSelect').value;
@@ -209,18 +242,10 @@ function priceForQty(p, qty) {
   return tiers.length ? Number(tiers[0].price) : Number(p.harga) || 0;
 }
 function updateSelectedProduct() {
-  const p = state.products.find(x => String(x.id) === String($('itemSelect').value));
-  const rawQty = $('itemQty').value;
-  const qty = Number(rawQty) > 0 ? Number(rawQty) : 1;
-  if (!p) {
-    $('itemPrice').value = '';
-    $('itemStock').value = '';
-    return;
-  }
-  const price = priceForQty(p, qty);
-  $('itemPrice').value = rupiah(price) + ' / ' + (p.satuan || 'unit') + (p.hargaMulti?.some(t => qty >= Number(t.min) && (!t.max || qty <= Number(t.max))) ? ' (multi)' : '');
-  $('itemStock').value = `${Number(p.stok) || 0} ${p.satuan || ''}`;
-  $('itemPrice').title = (p.hargaMulti || []).map(t => `${t.min}–${t.max || '∞'}: ${rupiah(t.price)}`).join(' | ');
+  const p = state.products.find(x => x.id === $('itemSelect').value);
+  const qty = Number($('itemQty').value) || 1;
+  $('itemPrice').value = p ? rupiah(priceForQty(p, qty)) + ' / ' + (p.satuan || 'unit') : '';
+  $('itemStock').value = p ? `${p.stok} ${p.satuan || ''}` : '';
 }
 if ($('itemQty')) $('itemQty').addEventListener('input', updateSelectedProduct);
 
@@ -232,8 +257,7 @@ $('addItem').onclick = () => {
   if (!(qty > 0)) return alert('Qty harus lebih dari 0.');
   
   const inCart = state.cart.filter(x => x.id === p.id).reduce((s, x) => s + x.qty, 0);
-  if (!(Number(p.stok) > 0)) return alert('Stok barang kosong. Barang tidak dapat dijual.');
-  if (qty + inCart > Number(p.stok)) return alert('Qty melebihi stok yang tersedia. Stok saat ini: ' + p.stok + '.');
+  if (qty + inCart > Number(p.stok)) return alert('Qty melebihi stok yang tersedia.');
   
   const existing = state.cart.find(x => x.id === p.id);
   if (existing) {
@@ -281,19 +305,9 @@ $('finishSale').onclick = async () => {
   
   const total = cartTotal();
   const bayar = Number($('amountPaid').value || 0);
-  const namaPelanggan = $('customerName').value.trim() || 'Pelanggan Umum';
   let cashbon = false;
   if (bayar < total) {
-    if (namaPelanggan === 'Pelanggan Umum') {
-      return alert('Pilih atau isi nama pelanggan terlebih dahulu agar piutang tercatat atas nama yang benar.');
-    }
-    const sisa = total - Math.max(0, bayar);
-    cashbon = window.confirm(
-      'Pembayaran belum lunas.\n\nTotal: ' + rupiah(total) +
-      '\nDibayar: ' + rupiah(bayar) +
-      '\nSisa piutang: ' + rupiah(sisa) +
-      '\n\nTekan OK untuk proses sebagai cashbon dan catat piutang pelanggan. Tekan Cancel untuk membatalkan.'
-    );
+    cashbon = window.confirm(`Pembayaran kurang ${rupiah(total - bayar)}. Proses sebagai cashbon dan catat kekurangannya sebagai piutang pelanggan?`);
     if (!cashbon) return;
   }
   
@@ -302,7 +316,7 @@ $('finishSale').onclick = async () => {
   
   try {
     const r = await api('checkout', {
-      namaPelanggan,
+      namaPelanggan: $('customerName').value.trim() || 'Pelanggan Umum',
       bayar, cashbon,
       items: state.cart
     });
