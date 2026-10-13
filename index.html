@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Yons Agen — Aplikasi Kasir</title>
-  <link rel="stylesheet" href="style.css?v=20261013marketplace2">
+  <link rel="stylesheet" href="style.css?v=20261013adminproduk3">
 </head>
 <body>
   
@@ -50,14 +50,15 @@
     <section id="page-produk" class="page">
       <div class="section-head">
         <div>
-          <h2>Belanja Produk</h2>
-          <p>Pilih barang yang tersedia. Tombol Beli akan memasukkan barang ke daftar order Kasir.</p>
+          <h2>Produk</h2>
+          <p>Katalog produk dan stok. Seluruh transaksi penjualan dilakukan melalui menu Kasir.</p>
         </div>
         <button id="refreshProducts" class="secondary" type="button">Muat ulang</button>
       </div>
       <label class="product-filter">Cari barang
         <input id="productSearch" type="search" placeholder="Ketik nama barang..." autocomplete="off">
       </label>
+      <div id="productCategories" class="product-categories" aria-label="Filter kategori"></div>
       <div id="productGrid" class="product-grid">
         <p class="muted">Memuat produk…</p>
       </div>
@@ -370,6 +371,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="app.js?v=20261013finance1"></script>
+  <script src="app.js?v=20261013adminproduk3"></script>
 </body>
 </html>
