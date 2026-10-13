@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Yons Agen — Aplikasi Kasir</title>
-  <link rel="stylesheet" href="style.css?v=20261013pembelianfix2">
+  <link rel="stylesheet" href="style.css?v=20261013supplierflow3">
 </head>
 <body>
   
@@ -80,6 +80,7 @@
               <input id="supplierName" autocomplete="off" placeholder="Ketik nama pemasok untuk mencari..." required>
               <button id="addSupplierBtn" class="secondary add-customer" type="button" title="Tambah pemasok" aria-label="Tambah pemasok">+</button>
             </div>
+            <small class="muted">Pilih pemasok terlebih dahulu. Nama barang akan menampilkan produk milik pemasok tersebut.</small>
             <div id="supplierSearchResults" class="search-results hidden"></div>
             <div id="supplierForm" class="customer-form hidden">
               <label>Nama pemasok baru<input id="newSupplierName" placeholder="Nama pemasok"></label>
@@ -93,7 +94,7 @@
             </div>
           </div>
           <label class="wide purchase-product-search-wrap">Nama barang
-            <input id="purchaseItemSearch" autocomplete="off" placeholder="Ketik nama barang untuk mencari...">
+            <input id="purchaseItemSearch" autocomplete="off" placeholder="Pilih pemasok terlebih dahulu...">
             <div id="purchaseItemSearchResults" class="search-results hidden"></div>
             <select id="purchaseItem" class="visually-hidden" aria-hidden="true" tabindex="-1">
               <option value="">Pilih barang…</option>
@@ -371,6 +372,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="app.js?v=20261013pembelianfix2"></script>
+  <script src="app.js?v=20261013supplierflow3"></script>
 </body>
 </html>
