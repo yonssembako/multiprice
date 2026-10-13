@@ -3,7 +3,7 @@
  * Isi API_URL dengan URL Web App Apps Script setelah deployment. 
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbyDtAZDRkovh3w12l4RwcDbXAoVEerLMdgzGUCMVWfo67yCkbTWr1Lnd-UkzaJHwN5_/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwIX-_eNoWcfPNqYAQMLXe0i_7CUAfkyXLNSA30SGY6BBTfA4e10GAVj1vi0qqRppdW3g/exec';
 // Versi cache frontend: naikkan angka ini setiap kali file diperbarui.
 
 const $ = id => document.getElementById(id);
@@ -318,13 +318,20 @@ $('finishSale').onclick = async () => {
     if (!cashbon) return;
   }
   
+  let tanggalJatuhTempo = '';
+  if (cashbon) {
+    const due = prompt('Tanggal jatuh tempo piutang (YYYY-MM-DD). Kosongkan jika belum ditentukan:', '');
+    if (due === null) return;
+    tanggalJatuhTempo = due.trim();
+    if (tanggalJatuhTempo && !/^\d{4}-\d{2}-\d{2}$/.test(tanggalJatuhTempo)) return alert('Format tanggal jatuh tempo harus YYYY-MM-DD.');
+  }
   $('finishSale').disabled = true;
   $('saleMessage').textContent = 'Menyimpan transaksi…';
   
   try {
     const r = await api('checkout', {
       namaPelanggan: $('customerName').value.trim() || 'Pelanggan Umum',
-      bayar, cashbon,
+      bayar, cashbon, tanggalJatuhTempo,
       items: state.cart
     });
     
@@ -470,6 +477,10 @@ $('addPurchaseItem').onclick = () => {
   }
   
   $('purchaseQty').value = '1';
+  clearPurchaseProductSelection(true);
+  if ($('purchaseItemSearch')) $('purchaseItemSearch').value = '';
+  if ($('purchasePrice')) $('purchasePrice').value = '';
+  if ($('purchaseItemSearchResults')) { $('purchaseItemSearchResults').innerHTML = ''; $('purchaseItemSearchResults').classList.add('hidden'); }
   renderPurchaseCart();
 };
 
@@ -496,6 +507,13 @@ $('savePurchase').onclick = async () => {
   const invalidCartItem = state.purchaseCart.find(item => { const product = state.products.find(p => String(p.id) === String(item.id)); return !product || !sameSupplier(product.supplier, supplierForSave); });
   if (invalidCartItem) return alert('Daftar pembelian berisi barang dari pemasok lain. Hapus barang tersebut atau pilih kembali pemasok yang sesuai.');
   
+  let tanggalJatuhTempo = '';
+  if ($('purchaseMethod').value === 'Utang') {
+    const due = prompt('Tanggal jatuh tempo hutang (YYYY-MM-DD). Kosongkan jika belum ditentukan:', '');
+    if (due === null) return;
+    tanggalJatuhTempo = due.trim();
+    if (tanggalJatuhTempo && !/^\d{4}-\d{2}-\d{2}$/.test(tanggalJatuhTempo)) return alert('Format tanggal jatuh tempo harus YYYY-MM-DD.');
+  }
   const btn = $('savePurchase');
   btn.disabled = true;
   $('purchaseMessage').textContent = 'Menyimpan pembelian…';
@@ -505,12 +523,20 @@ $('savePurchase').onclick = async () => {
       namaSupplier: $('supplierName').value.trim(),
       metodeBayar: $('purchaseMethod').value,
       catatan: $('purchaseNote').value.trim(),
+      tanggalJatuhTempo,
       items: state.purchaseCart
     });
     
     state.purchaseCart = [];
     renderPurchaseCart();
-    $('purchaseNote').value = '';$('purchaseMessage').textContent = `Pembelian ${r.purchase.id} tersimpan. Total ${rupiah(r.purchase.total)}. Stok sudah diperbarui.`;
+    $('purchaseNote').value = '';
+    $('supplierName').value = '';
+    if ($('supplierSearchResults')) { $('supplierSearchResults').innerHTML = ''; $('supplierSearchResults').classList.add('hidden'); }
+    clearPurchaseProductSelection(true);
+    if ($('purchaseItemSearch')) $('purchaseItemSearch').value = '';
+    if ($('purchasePrice')) $('purchasePrice').value = '';
+    if ($('purchaseItemSearchResults')) { $('purchaseItemSearchResults').innerHTML = ''; $('purchaseItemSearchResults').classList.add('hidden'); }
+    $('purchaseMessage').textContent = `Pembelian ${r.purchase.id} tersimpan. Total ${rupiah(r.purchase.total)}. Stok sudah diperbarui.`;
     
     await Promise.all([loadProducts(), loadSuppliers(), loadDashboard()]);
   } catch (e) {
@@ -670,7 +696,7 @@ async function loadFinance() {
 function renderFinanceTable(type, rows, targetId) {
   const el = $(targetId);
   if (!rows.length) { el.innerHTML = '<p class="muted">Belum ada data.</p>'; return; }
-  el.innerHTML = `<table class="finance-table"><thead><tr><th>Tanggal</th><th>Nama</th><th>Jumlah</th><th>Jml pembayaran</th><th>Sisa</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.tanggal)}</td><td>${esc(r.nama)}</td><td>${rupiah(r.total)}</td><td>${rupiah(r.dibayar)}</td><td>${rupiah(r.sisa)}</td><td>${esc(normalizeFinanceStatus(r.status, r.dibayar, r.sisa))}</td><td>${Number(r.sisa) > 0 ? `<button type="button" class="secondary" data-finance-type="${type}" data-finance-id="${esc(r.id)}" data-finance-remain="${Number(r.sisa)}">Bayar</button>` : '—'}</td></tr>`).join('')}</tbody></table>`;
+  el.innerHTML = `<table class="finance-table"><thead><tr><th>Tanggal</th><th>Nama</th><th>Jumlah</th><th>Jml pembayaran</th><th>Sisa</th><th>Jatuh Tempo</th><th>Tanggal Bayar</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.tanggal)}</td><td>${esc(r.nama)}</td><td>${rupiah(r.total)}</td><td>${rupiah(r.dibayar)}</td><td>${rupiah(r.sisa)}</td><td>${esc(r.jatuhTempo || '—')}</td><td>${esc(r.tanggalBayar || '—')}</td><td>${esc(normalizeFinanceStatus(r.status, r.dibayar, r.sisa))}</td><td>${Number(r.sisa) > 0 ? `<button type="button" class="secondary" data-finance-type="${type}" data-finance-id="${esc(r.id)}" data-finance-remain="${Number(r.sisa)}">Bayar</button>` : '—'}</td></tr>`).join('')}</tbody></table>`;
   el.querySelectorAll('[data-finance-id]').forEach(btn => btn.onclick = async () => {
     const remain = Number(btn.dataset.financeRemain);
     const raw = prompt(`Masukkan pembayaran untuk ${btn.dataset.financeId}. Sisa tagihan ${rupiah(remain)}:`, String(remain));
