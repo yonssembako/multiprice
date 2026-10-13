@@ -1038,3 +1038,11 @@ footer {
 .marketplace-card .price small { font-size: .78rem; font-weight: 400; color: #687780; }
 .marketplace-buy { width: 100%; margin-top: 4px; }
 .marketplace-buy:disabled { cursor: not-allowed; opacity: .55; }
+
+
+/* Kategori pada katalog Admin/Sales */
+.product-categories { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 18px; }
+.category-chip { border:1px solid var(--line); border-radius:999px; padding:8px 14px; background:#fff; color:var(--ink); }
+.category-chip.active { background:var(--blue); border-color:var(--blue); color:#092f3d; font-weight:700; }
+.product-category-label { display:inline-block; width:fit-content; padding:4px 8px; border-radius:5px; background:#eef7fa; color:#246276; font-size:.78rem; }
+.marketplace-card .product-info { padding:14px; }
