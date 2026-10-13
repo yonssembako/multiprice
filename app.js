@@ -3,7 +3,7 @@
  * Isi API_URL dengan URL Web App Apps Script setelah deployment. 
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxt5txNkNDmciScxazRJygfg4xxq0H-KCL2uc5KIB02KWMcDef7dwLzu_Iz1WzuM7nr/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwIX-_eNoWcfPNqYAQMLXe0i_7CUAfkyXLNSA30SGY6BBTfA4e10GAVj1vi0qqRppdW3g/exec';
 // Versi cache frontend: naikkan angka ini setiap kali file diperbarui.
 
 const $ = id => document.getElementById(id);
@@ -140,6 +140,8 @@ async function loadProducts() {
   try {
     const r = await api('products');
     state.products = (r.products || []).filter(p => p && String(p.nama || '').trim());
+    // Setiap pemuatan data baru mulai dari Semua agar daftar tidak tertinggal pada filter kategori lama.
+    state.productCategory = 'Semua';
     renderProductCategories();
     renderProducts();
     fillProductSelect();
