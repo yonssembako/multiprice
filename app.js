@@ -3,7 +3,7 @@
  * Isi API_URL dengan URL Web App Apps Script setelah deployment. 
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbyygbrq7EFOn3wY6QwaunKCZg1s5QPua8tijCZ7KgHqFhqEra_cv_SW6-TYR_gsIF4y/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwIX-_eNoWcfPNqYAQMLXe0i_7CUAfkyXLNSA30SGY6BBTfA4e10GAVj1vi0qqRppdW3g/exec';
 // Versi cache frontend: naikkan angka ini setiap kali file diperbarui.
 
 const $ = id => document.getElementById(id);
@@ -16,6 +16,7 @@ const state = {
   suppliers: [],
   cart: [],
   purchaseCart: [],
+  selectedPurchaseProductId: '',
   lastReceipt: null,
   dashboard: null,
   finance: { hutang: [], piutang: [] }
@@ -348,7 +349,8 @@ async function loadSuppliers() {
 function fillPurchaseSelect() {
   const old = $('purchaseItem').value;
   $('purchaseItem').innerHTML = '<option value="">Pilih barang…</option>' + state.products.map(p => `<option value="${esc(p.id)}">${esc(p.nama)}</option>`).join('');
-  if (state.products.some(p => p.id === old)) $('purchaseItem').value = old;
+  if (state.products.some(p => String(p.id) === String(old))) $('purchaseItem').value = old;
+  if (state.selectedPurchaseProductId && state.products.some(p => String(p.id) === state.selectedPurchaseProductId)) $('purchaseItem').value = state.selectedPurchaseProductId;
   if ($('purchaseItemSearch')) $('purchaseItemSearch').value = state.products.find(p => p.id === old)?.nama || '';
 }
 
@@ -358,6 +360,7 @@ function showPurchaseProductSearchResults() {
   if (!input || !results) return;
   const q = input.value.trim().toLocaleLowerCase('id');
   $('purchaseItem').value = '';
+  state.selectedPurchaseProductId = '';
   $('purchasePrice').value = '';
   if (!q) { results.classList.add('hidden'); results.innerHTML = ''; return; }
   if (!state.products.length) { results.innerHTML = '<div class="search-empty">Data barang belum termuat. Muat ulang aplikasi dan periksa koneksi.</div>'; results.classList.remove('hidden'); return; }
@@ -374,12 +377,13 @@ if ($('purchaseItemSearch')) {
     if (!button) return;
     const p = state.products.find(x => String(x.id) === button.dataset.purchaseProductId);
     if (!p) return;
+    state.selectedPurchaseProductId = String(p.id);
     $('purchaseItem').value = String(p.id);
     $('purchaseItemSearch').value = p.nama;
     $('purchaseItemSearchResults').classList.add('hidden');
     $('purchasePrice').value = p && p.hargaBeliSebelumnya != null ? Number(p.hargaBeliSebelumnya) : '';
     $('previousPurchasePrice').value = p && p.hargaBeliSebelumnya != null ? rupiah(p.hargaBeliSebelumnya) : 'Belum ada harga beli di sheet Produk';
-    if (p.supplier) $('supplierName').value = p.supplier;
+    $('supplierName').value = String(p.supplier || '');
     $('purchaseQty').focus();
   });
   document.addEventListener('click', e => {
@@ -388,14 +392,18 @@ if ($('purchaseItemSearch')) {
 }
 
 $('purchaseItem').onchange = () => {
-  const p = state.products.find(x => x.id === $('purchaseItem').value);
+  state.selectedPurchaseProductId = String($('purchaseItem').value || '');
+  const p = state.products.find(x => String(x.id) === state.selectedPurchaseProductId);
   $('purchasePrice').value = p && p.hargaBeliSebelumnya != null ? Number(p.hargaBeliSebelumnya) : '';
   $('previousPurchasePrice').value = p && p.hargaBeliSebelumnya != null ? rupiah(p.hargaBeliSebelumnya) : 'Belum ada harga beli di sheet Produk';
-  if (p && p.supplier) $('supplierName').value = p.supplier;
+  $('supplierName').value = String(p?.supplier || '');
 };
 
 $('addPurchaseItem').onclick = () => {
-  const p = state.products.find(x => x.id === $('purchaseItem').value);
+  const selectedId = String(state.selectedPurchaseProductId || $('purchaseItem').value || '');
+  const p = state.products.find(x => String(x.id) === selectedId);
+  // Pastikan elemen pilihan tersembunyi tetap sinkron dengan barang yang dipilih dari hasil pencarian.
+  if (p) $('purchaseItem').value = String(p.id);
   const qty = Number($('purchaseQty').value);
   const hargaBeli = Number($('purchasePrice').value);
   
