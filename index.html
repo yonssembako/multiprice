@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yons Agen — Aplikasi Kasir</title>
+  <link rel="stylesheet" href="style.css?v=20261013finance1">
+</head>
+<body>
+  
+  <!-- Layar Login -->
+  <section id="loginScreen" class="login-wrap">
+    <form id="loginForm" class="login-card">
+      <div class="brand-mark">YA</div>
+      <h1>YONS AGEN</h1>
+      <p>Kasir & pengelolaan penjualan</p>
+      
+      <label for="password">Password aplikasi</label>
+      <input id="password" type="password" required autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Masukkan password">
+      
+      <button class="primary full" type="submit">Masuk</button>
+      <small id="loginMessage" class="muted"></small>
+    </form>
+  </section>
+
+  <!-- Aplikasi Utama -->
+  <main id="app" class="hidden">
+    <header class="topbar">
+      <div>
+        <div class="brand">YONS AGEN</div>
+        <div class="address">Jl. Parungseah RT.04/RW.06, Ds. Parungseah, Kec. Sukabumi, Kab. Sukabumi · Hp. 089614021972</div>
+        <div id="headerClock" class="header-clock" aria-live="off">--/--/---- --:--:--</div>
+      </div>
+      <button id="logoutBtn" class="quiet">Keluar</button>
+    </header>
+
+    <div class="banner" aria-label="Area informasi">
+      <span>Selamat berbelanja di Yons Agen</span>
+    </div>
+
+    <nav class="tabs">
+      <button data-page="produk" class="tab active">Produk</button>
+      <button data-page="dashboard" class="tab">Dashboard</button>
+      <button data-page="pembelian" class="tab">Pembelian</button>
+      <button data-page="kasir" class="tab">Kasir</button>
+      <button data-page="finance" class="tab">Finance</button>
+    </nav>
+
+    <!-- Halaman Produk -->
+    <section id="page-produk" class="page">
+      <div class="section-head">
+        <div>
+          <h2>Produk & Barang</h2>
+          <p>Informasi barang, stok, satuan, dan harga terkini.</p>
+        </div>
+        <button id="refreshProducts" class="secondary">Muat ulang</button>
+      </div>
+      <label class="product-filter">Cari barang
+        <input id="productSearch" type="search" placeholder="Ketik nama barang..." autocomplete="off">
+      </label>
+      <div id="productGrid" class="product-grid">
+        <p class="muted">Memuat produk…</p>
+      </div>
+    </section>
+
+    <!-- Halaman Pembelian -->
+    <section id="page-pembelian" class="page hidden">
+      <div class="section-head">
+        <div>
+          <h2>Pembelian</h2>
+          <p>Catat barang masuk; stok bertambah otomatis.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="form-grid">
+          <div class="wide supplier-field">
+            <label for="supplierName">Nama pemasok</label>
+            <div class="customer-entry-row">
+              <input id="supplierName" autocomplete="off" placeholder="Ketik nama pemasok untuk mencari..." required>
+              <button id="addSupplierBtn" class="secondary add-customer" type="button" title="Tambah pemasok" aria-label="Tambah pemasok">+</button>
+            </div>
+            <div id="supplierSearchResults" class="search-results hidden"></div>
+            <div id="supplierForm" class="customer-form hidden">
+              <label>Nama pemasok baru<input id="newSupplierName" placeholder="Nama pemasok"></label>
+              <label>No. WhatsApp (opsional)<input id="newSupplierWa" inputmode="tel" placeholder="08xxxxxxxxxx"></label>
+              <label>Alamat (opsional)<input id="newSupplierAddress" placeholder="Alamat pemasok"></label>
+              <div class="customer-form-actions">
+                <button id="saveSupplierBtn" class="primary" type="button">Simpan pemasok</button>
+                <button id="cancelSupplierBtn" class="secondary" type="button">Batal</button>
+              </div>
+              <small id="supplierMessage" class="muted"></small>
+            </div>
+          </div>
+          <label class="wide purchase-product-search-wrap">Nama barang
+            <input id="purchaseItemSearch" autocomplete="off" placeholder="Ketik nama barang untuk mencari...">
+            <div id="purchaseItemSearchResults" class="search-results hidden"></div>
+            <select id="purchaseItem" class="visually-hidden" aria-hidden="true" tabindex="-1">
+              <option value="">Pilih barang…</option>
+            </select>
+          </label>
+          <label>Jumlah beli
+            <input id="purchaseQty" type="number" min="0.01" step="any" value="1">
+          </label>
+          <label>Harga beli sebelumnya
+            <input id="previousPurchasePrice" readonly placeholder="Belum ada riwayat">
+          </label>
+          <label>Harga beli per unit (Rp)
+            <input id="purchasePrice" type="number" min="0" step="any" placeholder="Harga beli">
+          </label>
+          <div class="wide">
+            <button id="addPurchaseItem" class="secondary full" type="button">Tambah ke daftar</button>
+          </div>
+        </div>
+
+        <div class="purchase-list" id="purchaseList">
+          <p class="muted">Belum ada barang pembelian.</p>
+        </div>
+
+        <label>Metode pembayaran
+          <select id="purchaseMethod">
+            <option value="Tunai">Tunai / lunas</option>
+            <option value="Transfer">Transfer / lunas</option>
+            <option value="Utang">Utang ke pemasok</option>
+          </select>
+        </label>
+
+        <label>Catatan (opsional)
+          <input id="purchaseNote" placeholder="Nomor nota atau keterangan">
+        </label>
+
+        <div class="purchase-total">
+          <span>Total pembelian</span>
+          <strong id="purchaseTotal">Rp 0</strong>
+        </div>
+
+        <button id="savePurchase" class="primary full" type="button">Simpan Pembelian</button>
+        <p id="purchaseMessage" class="muted"></p>
+      </div>
+    </section>
+
+    <!-- Halaman Kasir -->
+    <section id="page-kasir" class="page hidden">
+      <h2>Kasir</h2>
+      <div class="checkout-layout">
+        <div class="panel">
+          <div class="form-grid">
+            <div class="wide customer-field">
+              <label for="customerName">Nama pelanggan</label>
+              <div class="customer-entry-row">
+                <input id="customerName" autocomplete="off" placeholder="Ketik nama pelanggan untuk mencari...">
+                <div id="customerSearchResults" class="search-results hidden"></div>
+                <button id="addCustomerBtn" class="secondary add-customer" type="button" title="Tambah data pelanggan" aria-label="Tambah data pelanggan">+</button>
+              </div>
+
+              <div id="customerForm" class="customer-form hidden">
+                <label>Nama pelanggan baru
+                  <input id="newCustomerName" placeholder="Nama lengkap">
+                </label>
+                <label>No. WhatsApp (opsional)
+                  <input id="newCustomerWa" inputmode="tel" placeholder="08xxxxxxxxxx">
+                </label>
+                <label>Alamat (opsional)
+                  <input id="newCustomerAddress" placeholder="Alamat pelanggan">
+                </label>
+                <div class="customer-form-actions">
+                  <button id="saveCustomerBtn" class="primary" type="button">Simpan pelanggan</button>
+                  <button id="cancelCustomerBtn" class="secondary" type="button">Batal</button>
+                </div>
+                <small id="customerMessage" class="muted"></small>
+              </div>
+            </div>
+
+            <div class="wide product-search-wrap">
+              <label for="itemSearch">Pilih barang</label>
+              <input id="itemSearch" autocomplete="off" placeholder="Ketik nama barang untuk mencari...">
+              <div id="itemSearchResults" class="search-results hidden"></div>
+              <select id="itemSelect" class="visually-hidden" aria-hidden="true" tabindex="-1">
+                <option value="">Pilih barang…</option>
+              </select>
+            </div>
+
+            <label>Qty
+              <input id="itemQty" type="number" min="0" step="any" value="">
+            </label>
+
+            <label>Harga saat ini
+              <input id="itemPrice" readonly>
+            </label>
+
+            <label>Stok tersedia
+              <input id="itemStock" readonly>
+            </label>
+
+            <div class="align-end">
+              <button id="addItem" class="primary">Tambah barang</button>
+            </div>
+          </div>
+          <p class="hint">Harga mengikuti jumlah barang: atur tingkat harga di sheet Produk pada kolom Min_Qty_1, Max_Qty_1, Harga_Multi_1 hingga tingkat 3. Harga transaksi disimpan saat barang ditambahkan.</p>
+        </div>
+
+        <div class="panel cart-panel">
+          <h3>Daftar Belanja</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>No.</th>
+                  <th>Nama barang</th>
+                  <th>Qty</th>
+                  <th>Harga/Qty</th>
+                  <th>Jumlah</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="cartRows">
+                <tr>
+                  <td colspan="6" class="empty">Belum ada barang.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="totals">
+            <div>
+              <span>Total</span>
+              <strong id="cartTotal">Rp 0</strong>
+            </div>
+            
+            <label>Bayar
+              <input id="amountPaid" type="number" min="0" placeholder="Jumlah pembayaran">
+            </label>
+            
+            <div>
+              <span>Kembalian</span>
+              <strong id="changeDue">Rp 0</strong>
+            </div>
+            
+            <button id="finishSale" class="primary full">Belanja Selesai</button>
+            <p id="saleMessage" class="muted"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Halaman Finance -->
+    <section id="page-finance" class="page hidden">
+      <div class="section-head"><div><h2>Finance</h2><p>Catatan hutang ke pemasok dan piutang pelanggan.</p></div>
+        <button id="refreshFinance" class="secondary" type="button">Perbarui Finance</button>
+      </div>
+      <div class="panel finance-panel">
+        <h3>Hutang ke Pemasok</h3>
+        <div id="financeHutang" class="table-scroll"><p class="muted">Memuat data hutang…</p></div>
+      </div>
+      <div class="panel finance-panel">
+        <h3>Piutang Pelanggan</h3>
+        <div id="financePiutang" class="table-scroll"><p class="muted">Memuat data piutang…</p></div>
+      </div>
+      <p id="financeMessage" class="muted"></p>
+    </section>
+
+    <!-- Halaman Dashboard -->
+    <section id="page-dashboard" class="page hidden">
+      <div class="section-head">
+        <div>
+          <h2>Dashboard Penjualan</h2>
+          <p>Ringkasan transaksi dan perbandingan periode.</p>
+        </div>
+        <button id="refreshDashboard" class="secondary">Perbarui laporan</button>
+      </div>
+
+      <div class="filters">
+        <label>Periode
+          <select id="period">
+            <option value="day">Hari ini</option>
+            <option value="week">Minggu ini</option>
+            <option value="month">Bulan ini</option>
+            <option value="year">Tahun ini</option>
+          </select>
+        </label>
+        
+        <label>Target omzet periode (Rp)
+          <input id="salesTarget" type="text" inputmode="numeric" autocomplete="off" value="1.000.000" aria-label="Target omzet periode dalam rupiah">
+        </label>
+        
+        <button id="applyDashboard" class="primary">Terapkan</button>
+      </div>
+
+      <div class="metrics">
+        <article class="metric">
+          <span>Omzet periode ini</span>
+          <strong id="metricRevenue">Rp 0</strong>
+          <small id="metricRevenueChange">vs periode sebelumnya: —</small>
+        </article>
+        
+        <article class="metric">
+          <span>Jumlah transaksi</span>
+          <strong id="metricTransactions">0</strong>
+          <small id="metricTransactionsChange">vs periode sebelumnya: —</small>
+        </article>
+        
+        <article class="metric">
+          <span>Barang terjual</span>
+          <strong id="metricItems">0</strong>
+          <small id="metricItemsChange">vs periode sebelumnya: —</small>
+        </article>
+        
+        <article class="metric">
+          <span>Rata-rata transaksi</span>
+          <strong id="metricAverage">Rp 0</strong>
+          <small>Nilai rata-rata per transaksi</small>
+        </article>
+      </div>
+
+      <div class="panel progress-panel">
+        <div class="section-head">
+          <div>
+            <h3>Progres omzet: As Is vs To Be</h3>
+            <p>As Is = omzet aktual. To Be = target omzet yang Anda tetapkan.</p>
+          </div>
+          <strong id="targetPercent">0%</strong>
+        </div>
+        
+        <div class="progress-track">
+          <div id="targetBar" class="progress-bar"></div>
+        </div>
+        
+        <div class="progress-labels">
+          <span id="actualLabel">Aktual: Rp 0</span>
+          <span id="targetLabel">Target: Rp 1.000.000</span>
+        </div>
+        
+        <div class="comparison">
+          <div>
+            <span>Perubahan dari periode sebelumnya</span>
+            <strong id="comparisonText">Belum ada data pembanding</strong>
+          </div>
+          <p class="hint">Laporan berdasarkan transaksi yang tersimpan di sheet Penjualan. Target merupakan acuan yang dapat diubah, bukan ramalan.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Penjualan per hari</h3>
+        <div id="dailyBars" class="bars">
+          <p class="muted">Memuat data…</p>
+        </div>
+      </div>
+
+      <div class="panel product-analysis-panel">
+        <h3>Analisis Penjualan per Produk</h3>
+        <p class="hint">Laba kotor merupakan estimasi berdasarkan rata-rata harga beli yang tercatat di menu Pembelian. Produk tanpa riwayat harga beli akan ditandai belum tersedia.</p>
+        <div id="productAnalysis" class="table-scroll">
+          <p class="muted">Memuat analisis…</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>Yons Agen · Data transaksi tersimpan di Google Spreadsheet</footer>
+  </main>
+
+  <!-- Modal Struk -->
+  <div id="receiptModal" class="modal hidden">
+    <div class="receipt-card">
+      <button id="closeReceipt" class="close" aria-label="Tutup">×</button>
+      <div id="receiptContent"></div>
+      <div class="receipt-actions">
+        <button id="shareReceipt" class="primary">Kirim via WhatsApp</button>
+        <button id="printReceipt" class="secondary">Cetak struk</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="app.js?v=20261013finance1"></script>
+</body>
+</html>
