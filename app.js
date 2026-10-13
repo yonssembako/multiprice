@@ -3,7 +3,7 @@
  * Isi API_URL dengan URL Web App Apps Script setelah deployment. 
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxq3k0g9OQNTTZfGPfFBq_E5HEjOcyHy5CiLH7WzM46CNgizXGlyyJSpiFd5b5Gre3H/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwIX-_eNoWcfPNqYAQMLXe0i_7CUAfkyXLNSA30SGY6BBTfA4e10GAVj1vi0qqRppdW3g/exec';
 
 const $ = id => document.getElementById(id);
 
@@ -266,9 +266,19 @@ $('finishSale').onclick = async () => {
   
   const total = cartTotal();
   const bayar = Number($('amountPaid').value || 0);
+  const namaPelanggan = $('customerName').value.trim() || 'Pelanggan Umum';
   let cashbon = false;
   if (bayar < total) {
-    cashbon = confirm(`Pembayaran kurang ${rupiah(total - bayar)}. Proses sebagai cashbon/piutang pelanggan?`);
+    if (namaPelanggan === 'Pelanggan Umum') {
+      return alert('Pilih atau isi nama pelanggan terlebih dahulu agar piutang tercatat atas nama yang benar.');
+    }
+    const sisa = total - Math.max(0, bayar);
+    cashbon = window.confirm(
+      'Pembayaran belum lunas.\n\nTotal: ' + rupiah(total) +
+      '\nDibayar: ' + rupiah(bayar) +
+      '\nSisa piutang: ' + rupiah(sisa) +
+      '\n\nTekan OK untuk proses sebagai cashbon dan catat piutang pelanggan. Tekan Cancel untuk membatalkan.'
+    );
     if (!cashbon) return;
   }
   
@@ -277,7 +287,7 @@ $('finishSale').onclick = async () => {
   
   try {
     const r = await api('checkout', {
-      namaPelanggan: $('customerName').value.trim() || 'Pelanggan Umum',
+      namaPelanggan,
       bayar, cashbon,
       items: state.cart
     });
