@@ -1092,3 +1092,18 @@ footer {
 @media (max-width: 600px) {
   #page-produk .product-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+
+/* V8: ukuran foto menu Produk diperkecil lagi agar tidak mendominasi kartu. */
+#page-produk .marketplace-card .product-photo {
+  width: 56px !important;
+  height: 56px !important;
+  min-width: 56px;
+  min-height: 56px;
+  aspect-ratio: auto !important;
+  object-fit: contain;
+  align-self: center;
+  margin: 10px auto 0;
+  border-radius: 6px;
+}
+#page-produk .marketplace-card .product-info { padding: 10px 12px 12px; gap: 7px; }
