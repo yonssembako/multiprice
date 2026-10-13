@@ -3,7 +3,7 @@
  * Isi API_URL dengan URL Web App Apps Script setelah deployment. 
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzywbAFetkXi2MIcJUVRSaMeGCLFDW-zdBDmehiKgDYs9qceCRuNNC0bOdrf5BtQ-Wa/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwIX-_eNoWcfPNqYAQMLXe0i_7CUAfkyXLNSA30SGY6BBTfA4e10GAVj1vi0qqRppdW3g/exec';
 // Versi cache frontend: naikkan angka ini setiap kali file diperbarui.
 
 const $ = id => document.getElementById(id);
@@ -378,7 +378,8 @@ if ($('purchaseItemSearch')) {
     $('purchaseItemSearch').value = p.nama;
     $('purchaseItemSearchResults').classList.add('hidden');
     $('purchasePrice').value = p && p.hargaBeliSebelumnya != null ? Number(p.hargaBeliSebelumnya) : '';
-    $('previousPurchasePrice').value = p && p.hargaBeliSebelumnya != null ? rupiah(p.hargaBeliSebelumnya) : 'Belum ada riwayat';
+    $('previousPurchasePrice').value = p && p.hargaBeliSebelumnya != null ? rupiah(p.hargaBeliSebelumnya) : 'Belum ada harga beli di sheet Produk';
+    if (p.supplier) $('supplierName').value = p.supplier;
     $('purchaseQty').focus();
   });
   document.addEventListener('click', e => {
@@ -389,7 +390,8 @@ if ($('purchaseItemSearch')) {
 $('purchaseItem').onchange = () => {
   const p = state.products.find(x => x.id === $('purchaseItem').value);
   $('purchasePrice').value = p && p.hargaBeliSebelumnya != null ? Number(p.hargaBeliSebelumnya) : '';
-  $('previousPurchasePrice').value = p && p.hargaBeliSebelumnya != null ? rupiah(p.hargaBeliSebelumnya) : 'Belum ada riwayat';
+  $('previousPurchasePrice').value = p && p.hargaBeliSebelumnya != null ? rupiah(p.hargaBeliSebelumnya) : 'Belum ada harga beli di sheet Produk';
+  if (p && p.supplier) $('supplierName').value = p.supplier;
 };
 
 $('addPurchaseItem').onclick = () => {
