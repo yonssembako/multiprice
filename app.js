@@ -3,7 +3,7 @@
  * Isi API_URL dengan URL Web App Apps Script setelah deployment. 
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzD4q2SOtRUyW2ubydbwdQvrXd6EOdC5FEqRECErygh08dXj83lkTuSlMJQ7iSR94Tb/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwIX-_eNoWcfPNqYAQMLXe0i_7CUAfkyXLNSA30SGY6BBTfA4e10GAVj1vi0qqRppdW3g/exec';
 
 const $ = id => document.getElementById(id);
 
@@ -137,12 +137,18 @@ async function loadProducts() {
 }
 
 function renderProducts() {
+  const query = String($('productSearch')?.value || '').trim().toLocaleLowerCase('id');
+  const visibleProducts = state.products.filter(p => String(p.nama || '').toLocaleLowerCase('id').includes(query));
   if (!state.products.length) {
     $('productGrid').innerHTML = '<p class="muted">Belum ada data produk. Tambahkan produk di sheet Produk.</p>';
     return;
   }
+  if (!visibleProducts.length) {
+    $('productGrid').innerHTML = '<p class="muted">Tidak ada barang yang cocok dengan pencarian “' + esc(query) + '”.</p>';
+    return;
+  }
   
-  $('productGrid').innerHTML = state.products.map(p => {
+  $('productGrid').innerHTML = visibleProducts.map(p => {
     const name = String(p.nama || '').toLowerCase();
     const fallback = name.includes('telur') ? 'https://images.unsplash.com/photo-1506976785307-8732e854ad03?auto=format&fit=crop&w=600&q=80' : (name.includes('minyak') ? 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80' : (name.includes('beras') ? 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80' : 'https://placehold.co/600x400/eaf4f7/52666d?text=Foto+Produk'));
     const photo = p.foto || fallback;
@@ -203,10 +209,18 @@ function priceForQty(p, qty) {
   return tiers.length ? Number(tiers[0].price) : Number(p.harga) || 0;
 }
 function updateSelectedProduct() {
-  const p = state.products.find(x => x.id === $('itemSelect').value);
-  const qty = Number($('itemQty').value) || 1;
-  $('itemPrice').value = p ? rupiah(priceForQty(p, qty)) + ' / ' + (p.satuan || 'unit') : '';
-  $('itemStock').value = p ? `${p.stok} ${p.satuan || ''}` : '';
+  const p = state.products.find(x => String(x.id) === String($('itemSelect').value));
+  const rawQty = $('itemQty').value;
+  const qty = Number(rawQty) > 0 ? Number(rawQty) : 1;
+  if (!p) {
+    $('itemPrice').value = '';
+    $('itemStock').value = '';
+    return;
+  }
+  const price = priceForQty(p, qty);
+  $('itemPrice').value = rupiah(price) + ' / ' + (p.satuan || 'unit') + (p.hargaMulti?.some(t => qty >= Number(t.min) && (!t.max || qty <= Number(t.max))) ? ' (multi)' : '');
+  $('itemStock').value = `${Number(p.stok) || 0} ${p.satuan || ''}`;
+  $('itemPrice').title = (p.hargaMulti || []).map(t => `${t.min}–${t.max || '∞'}: ${rupiah(t.price)}`).join(' | ');
 }
 if ($('itemQty')) $('itemQty').addEventListener('input', updateSelectedProduct);
 
@@ -218,7 +232,8 @@ $('addItem').onclick = () => {
   if (!(qty > 0)) return alert('Qty harus lebih dari 0.');
   
   const inCart = state.cart.filter(x => x.id === p.id).reduce((s, x) => s + x.qty, 0);
-  if (qty + inCart > Number(p.stok)) return alert('Qty melebihi stok yang tersedia.');
+  if (!(Number(p.stok) > 0)) return alert('Stok barang kosong. Barang tidak dapat dijual.');
+  if (qty + inCart > Number(p.stok)) return alert('Qty melebihi stok yang tersedia. Stok saat ini: ' + p.stok + '.');
   
   const existing = state.cart.find(x => x.id === p.id);
   if (existing) {
