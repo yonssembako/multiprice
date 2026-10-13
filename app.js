@@ -3,7 +3,7 @@
  * Isi API_URL dengan URL Web App Apps Script setelah deployment. 
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwgaQDrKL-S7KvJVZ0D_C3h5h_iZEQ-HpIu7oysclLZ0_0rvvmA1rvgoNJL1e0U7lY7/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwIX-_eNoWcfPNqYAQMLXe0i_7CUAfkyXLNSA30SGY6BBTfA4e10GAVj1vi0qqRppdW3g/exec';
 // Versi cache frontend: naikkan angka ini setiap kali file diperbarui.
 
 const $ = id => document.getElementById(id);
@@ -11,6 +11,7 @@ const $ = id => document.getElementById(id);
 const state = {
   password: '',
   products: [],
+  productCategory: 'Semua',
   customers: [],
   suppliers: [],
   cart: [],
@@ -127,11 +128,18 @@ setInterval(() => { if (state.password && !$('app').classList.contains('hidden')
 
 $('refreshProducts').onclick = loadProducts;
 if ($('productSearch')) $('productSearch').addEventListener('input', renderProducts);
+if ($('productCategories')) $('productCategories').addEventListener('click', e => {
+  const b = e.target.closest('[data-category]');
+  if (!b) return;
+  state.productCategory = b.dataset.category;
+  renderProducts();
+});
 
 async function loadProducts() {
   try {
     const r = await api('products');
-    state.products = r.products || [];
+    state.products = (r.products || []).filter(p => p && String(p.nama || '').trim());
+    renderProductCategories();
     renderProducts();
     fillProductSelect();
   } catch (e) {
@@ -139,13 +147,27 @@ async function loadProducts() {
   }
 }
 
+function renderProductCategories() {
+  const el = $('productCategories');
+  if (!el) return;
+  const categories = [...new Set(state.products.map(p => String(p.kategori || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'id'));
+  if (state.productCategory !== 'Semua' && !categories.includes(state.productCategory)) state.productCategory = 'Semua';
+  const all = ['Semua', ...categories];
+  el.innerHTML = all.map(c => `<button type="button" class="category-chip ${state.productCategory === c ? 'active' : ''}" data-category="${esc(c)}" aria-pressed="${state.productCategory === c}">${esc(c)}</button>`).join('');
+}
+
 function renderProducts() {
   const grid = $('productGrid');
   if (!grid) return;
   const q = ($('productSearch')?.value || '').trim().toLocaleLowerCase('id');
-  const products = state.products.filter(p => String(p.nama || '').toLocaleLowerCase('id').includes(q));
+  const products = state.products.filter(p => {
+    const nameMatches = String(p.nama || '').toLocaleLowerCase('id').includes(q);
+    const categoryMatches = state.productCategory === 'Semua' || String(p.kategori || '').trim() === state.productCategory;
+    return nameMatches && categoryMatches;
+  });
   if (!products.length) {
-    grid.innerHTML = `<p class="muted">${q ? 'Barang tidak ditemukan.' : 'Belum ada data produk. Tambahkan produk di sheet Produk lalu tekan Muat ulang.'}</p>`;
+    grid.innerHTML = `<p class="muted">${state.products.length ? 'Tidak ada produk yang cocok dengan pencarian/kategori ini.' : 'Data produk belum diterima dari spreadsheet. Periksa kolom Aktif, lalu tekan Muat ulang. Jika tetap tidak muncul, deploy ulang Apps Script ke versi terbaru.'}</p>`;
     return;
   }
   grid.innerHTML = products.map(p => {
@@ -153,42 +175,18 @@ function renderProducts() {
     const fallback = name.includes('telur') ? 'https://images.unsplash.com/photo-1506976785307-8732e854ad03?auto=format&fit=crop&w=600&q=80' : (name.includes('minyak') ? 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80' : (name.includes('beras') ? 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80' : 'https://placehold.co/600x400/eaf4f7/52666d?text=Foto+Produk'));
     const photo = p.foto || fallback;
     const stock = Number(p.stok) || 0;
+    const category = String(p.kategori || 'Tanpa kategori').trim() || 'Tanpa kategori';
     return `<article class="product-card marketplace-card">
       <img class="product-photo" src="${esc(photo)}" alt="Foto ${esc(p.nama)}" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/600x400/eaf4f7/52666d?text=Foto+Produk'">
       <div class="product-info">
+        <small class="product-category-label">${esc(category)}</small>
         <h3 class="marketplace-title">${esc(p.nama)}</h3>
         <div class="marketplace-stock ${stock <= 0 ? 'out-of-stock' : ''}">${stock > 0 ? `Stok tersedia: ${esc(stock)} ${esc(p.satuan || 'unit')}` : 'Stok habis'}</div>
         <div class="price">${rupiah(p.harga)} <small>/ ${esc(p.satuan || 'unit')}</small></div>
-        <button type="button" class="primary marketplace-buy" data-buy-product="${esc(p.id)}" ${stock <= 0 ? 'disabled' : ''}>${stock > 0 ? 'Beli' : 'Stok habis'}</button>
       </div>
     </article>`;
   }).join('');
 }
-
-// Tombol Beli menambahkan 1 unit ke keranjang Kasir lalu membuka halaman order.
-$('productGrid')?.addEventListener('click', e => {
-  const button = e.target.closest('[data-buy-product]');
-  if (!button || button.disabled) return;
-  const p = state.products.find(x => String(x.id) === button.dataset.buyProduct);
-  if (!p) return alert('Data produk belum terbaru. Tekan Muat ulang.');
-  const available = Number(p.stok) || 0;
-  const existing = state.cart.find(x => String(x.id) === String(p.id));
-  const currentQty = existing ? Number(existing.qty) || 0 : 0;
-  if (available <= 0 || currentQty + 1 > available) return alert('Stok barang tidak mencukupi.');
-  if (existing) {
-    existing.qty += 1;
-    existing.harga = priceForQty(p, existing.qty);
-  } else {
-    state.cart.push({ id: p.id, nama: p.nama, satuan: p.satuan || 'unit', harga: priceForQty(p, 1), qty: 1 });
-  }
-  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.page === 'kasir'));
-  document.querySelectorAll('.page').forEach(x => x.classList.toggle('hidden', x.id !== 'page-kasir'));
-  renderCart();
-  $('itemSearch').value = '';
-  $('itemSelect').value = '';
-  $('itemQty').value = '';
-  updateSelectedProduct();
-});
 
 function fillProductSelect() {
   const old = $('itemSelect').value;
