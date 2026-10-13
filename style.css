@@ -1094,16 +1094,42 @@ footer {
 }
 
 
-/* V8: ukuran foto menu Produk diperkecil lagi agar tidak mendominasi kartu. */
+/* V9: foto produk cukup besar dan berada di sisi kanan kartu, mengikuti contoh pengguna. */
+#page-produk .marketplace-card {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch;
+  min-height: 154px;
+}
 #page-produk .marketplace-card .product-photo {
-  width: 56px !important;
-  height: 56px !important;
-  min-width: 56px;
-  min-height: 56px;
-  aspect-ratio: auto !important;
+  order: 2;
+  flex: 0 0 120px;
+  width: 120px !important;
+  height: 120px !important;
+  min-width: 120px;
+  min-height: 120px;
+  max-width: 120px;
+  aspect-ratio: 1 / 1 !important;
   object-fit: contain;
   align-self: center;
-  margin: 10px auto 0;
+  margin: 10px 12px 10px 8px;
   border-radius: 6px;
 }
-#page-produk .marketplace-card .product-info { padding: 10px 12px 12px; gap: 7px; }
+#page-produk .marketplace-card .product-info {
+  order: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 10px 10px 10px 12px;
+  gap: 7px;
+}
+@media (max-width: 420px) {
+  #page-produk .marketplace-card .product-photo {
+    flex-basis: 96px;
+    width: 96px !important;
+    height: 96px !important;
+    min-width: 96px;
+    min-height: 96px;
+    max-width: 96px;
+    margin: 8px;
+  }
+}
