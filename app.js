@@ -3,7 +3,7 @@
  * Isi API_URL dengan URL Web App Apps Script setelah deployment. 
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzsc30bTVO_DeUR63AaVaPH_i7VuWeleHGAY8TchIENrkL8KmtRko4iTPNsdRmtpoib/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwIX-_eNoWcfPNqYAQMLXe0i_7CUAfkyXLNSA30SGY6BBTfA4e10GAVj1vi0qqRppdW3g/exec';
 // Versi cache frontend: naikkan angka ini setiap kali file diperbarui.
 
 const $ = id => document.getElementById(id);
@@ -299,6 +299,16 @@ $('amountPaid').oninput = updateChange;
 
 function updateChange() {
   $('changeDue').textContent = rupiah(Math.max(0, Number($('amountPaid').value || 0) - cartTotal()));
+  updateSaleTenorVisibility();
+}
+
+// Tampilkan isian tenor setiap kali total keranjang berubah dan pembayaran
+// kurang dari total, termasuk saat nominal pembayaran masih kosong/0.
+function updateSaleTenorVisibility() {
+  const total = cartTotal();
+  const bayar = Number($('amountPaid').value || 0);
+  const short = total > 0 && bayar < total;
+  updateDueDateFromTenor('saleTenor', 'saleDueDate', 'saleTenorWrap', short);
 }
 
 function updateDueDateFromTenor(tenorId, dueId, wrapId, enabled) {
@@ -313,15 +323,9 @@ function updateDueDateFromTenor(tenorId, dueId, wrapId, enabled) {
 }
 $('purchaseMethod').addEventListener('change', () => updateDueDateFromTenor('purchaseTenor','purchaseDueDate','purchaseTenorWrap',$('purchaseMethod').value === 'Utang'));
 $('purchaseTenor').addEventListener('input', () => updateDueDateFromTenor('purchaseTenor','purchaseDueDate','purchaseTenorWrap',$('purchaseMethod').value === 'Utang'));
-$('amountPaid').addEventListener('input', () => {
-  const total = cartTotal();
-  const short = Number($('amountPaid').value || 0) < total && total > 0;
-  updateDueDateFromTenor('saleTenor','saleDueDate','saleTenorWrap',short);
-});
-$('saleTenor').addEventListener('input', () => {
-  const total = cartTotal(); const short = Number($('amountPaid').value || 0) < total && total > 0;
-  updateDueDateFromTenor('saleTenor','saleDueDate','saleTenorWrap',short);
-});
+$('amountPaid').addEventListener('input', updateSaleTenorVisibility);
+$('saleTenor').addEventListener('input', updateSaleTenorVisibility);
+updateSaleTenorVisibility();
 
 $('finishSale').onclick = async () => {
   if (!state.cart.length) return alert('Daftar belanja masih kosong.');
