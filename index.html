@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Yons Agen — Aplikasi Kasir</title>
-  <link rel="stylesheet" href="style.css?v=20261014foto-produk-besar-v9">
+  <link rel="stylesheet" href="style.css?v=20261014tenor-manual-v13">
 </head>
 <body>
   
@@ -126,6 +126,14 @@
           </select>
         </label>
 
+        <div id="purchaseTenorWrap" class="form-grid hidden">
+          <label>Tenor pembayaran (hari)
+            <input id="purchaseTenor" type="number" min="1" step="1" inputmode="numeric" placeholder="Ketik tenor, mis. 30">
+          </label>
+          <label>Tanggal jatuh tempo
+            <input id="purchaseDueDate" type="date" readonly>
+          </label>
+        </div>
         <label>Catatan (opsional)
           <input id="purchaseNote" placeholder="Nomor nota atau keterangan">
         </label>
@@ -231,6 +239,14 @@
             <label>Bayar
               <input id="amountPaid" type="number" min="0" placeholder="Jumlah pembayaran">
             </label>
+            <div id="saleTenorWrap" class="form-grid hidden">
+              <label>Tenor pembayaran (hari)
+                <input id="saleTenor" type="number" min="1" step="1" inputmode="numeric" placeholder="Ketik tenor, mis. 14">
+              </label>
+              <label>Tanggal jatuh tempo
+                <input id="saleDueDate" type="date" readonly>
+              </label>
+            </div>
             
             <div>
               <span>Kembalian</span>
@@ -372,6 +388,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="app.js?v=20261014foto-produk-besar-v9"></script>
+  <script src="app.js?v=20261014tenor-manual-v13"></script>
 </body>
 </html>
