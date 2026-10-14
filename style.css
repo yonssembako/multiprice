@@ -1016,14 +1016,14 @@ footer {
 .supplier-field { position: relative; }
 .supplier-field > .search-results { top: 75px; }
 .finance-panel { margin-bottom: 18px; }
-.finance-table { min-width: 760px; }
+.finance-table { min-width: 900px; }
 .finance-table td:last-child { white-space: nowrap; }
 .finance-table td button { color: var(--ink); }
 @media (max-width: 640px) {
   .topbar { align-items: flex-start; }
   .header-clock { font-size: 12px; }
   .product-grid { grid-template-columns: minmax(0, 1fr); }
-  .finance-table { min-width: 720px; }
+  .finance-table { min-width: 900px; }
 }
 
 
