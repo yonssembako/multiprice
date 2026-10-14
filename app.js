@@ -3,7 +3,7 @@
  * Isi API_URL dengan URL Web App Apps Script setelah deployment. 
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzrugn124EykazkxqXgo9_AwFAd4ewESeAG0MlbUfE3a7tjsHKMB31G3Hu40joyc4Nx/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwIX-_eNoWcfPNqYAQMLXe0i_7CUAfkyXLNSA30SGY6BBTfA4e10GAVj1vi0qqRppdW3g/exec';
 // Versi cache frontend: naikkan angka ini setiap kali file diperbarui.
 
 const $ = id => document.getElementById(id);
@@ -301,6 +301,28 @@ function updateChange() {
   $('changeDue').textContent = rupiah(Math.max(0, Number($('amountPaid').value || 0) - cartTotal()));
 }
 
+function updateDueDateFromTenor(tenorId, dueId, wrapId, enabled) {
+  const wrap = $(wrapId), tenorEl = $(tenorId), dueEl = $(dueId);
+  if (!wrap || !tenorEl || !dueEl) return;
+  wrap.classList.toggle('hidden', !enabled);
+  if (!enabled) { tenorEl.value = ''; dueEl.value = ''; return; }
+  const days = Number(tenorEl.value);
+  if (!Number.isInteger(days) || days < 1) { dueEl.value = ''; return; }
+  const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate() + days);
+  dueEl.value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+$('purchaseMethod').addEventListener('change', () => updateDueDateFromTenor('purchaseTenor','purchaseDueDate','purchaseTenorWrap',$('purchaseMethod').value === 'Utang'));
+$('purchaseTenor').addEventListener('input', () => updateDueDateFromTenor('purchaseTenor','purchaseDueDate','purchaseTenorWrap',$('purchaseMethod').value === 'Utang'));
+$('amountPaid').addEventListener('input', () => {
+  const total = cartTotal();
+  const short = Number($('amountPaid').value || 0) < total && total > 0;
+  updateDueDateFromTenor('saleTenor','saleDueDate','saleTenorWrap',short);
+});
+$('saleTenor').addEventListener('input', () => {
+  const total = cartTotal(); const short = Number($('amountPaid').value || 0) < total && total > 0;
+  updateDueDateFromTenor('saleTenor','saleDueDate','saleTenorWrap',short);
+});
+
 $('finishSale').onclick = async () => {
   if (!state.cart.length) return alert('Daftar belanja masih kosong.');
   
@@ -318,12 +340,12 @@ $('finishSale').onclick = async () => {
     if (!cashbon) return;
   }
   
-  let tanggalJatuhTempo = '';
+  let tenorHari = 0, tanggalJatuhTempo = '';
   if (cashbon) {
-    const due = prompt('Tanggal jatuh tempo piutang (YYYY-MM-DD). Kosongkan jika belum ditentukan:', '');
-    if (due === null) return;
-    tanggalJatuhTempo = due.trim();
-    if (tanggalJatuhTempo && !/^\d{4}-\d{2}-\d{2}$/.test(tanggalJatuhTempo)) return alert('Format tanggal jatuh tempo harus YYYY-MM-DD.');
+    tenorHari = Number($('saleTenor').value || 0);
+    if (!Number.isInteger(tenorHari) || tenorHari < 1) { alert('Tenor piutang wajib diisi dengan jumlah hari minimal 1.'); $('saleTenor').focus(); return; }
+    tanggalJatuhTempo = $('saleDueDate').value;
+    if (!tanggalJatuhTempo) { alert('Tanggal jatuh tempo belum terbentuk. Periksa tenor pembayaran.'); return; }
   }
   $('finishSale').disabled = true;
   $('saleMessage').textContent = 'Menyimpan transaksi…';
@@ -331,7 +353,7 @@ $('finishSale').onclick = async () => {
   try {
     const r = await api('checkout', {
       namaPelanggan: $('customerName').value.trim() || 'Pelanggan Umum',
-      bayar, cashbon, tanggalJatuhTempo,
+      bayar, cashbon, tenorHari, tanggalJatuhTempo,
       items: state.cart
     });
     
@@ -339,7 +361,7 @@ $('finishSale').onclick = async () => {
     showReceipt(r.receipt);
     
     state.cart = [];
-    $('amountPaid').value = '';$('customerName').value = '';
+    $('amountPaid').value = '';$('customerName').value = ''; $('saleTenor').value = ''; $('saleDueDate').value = ''; $('saleTenorWrap').classList.add('hidden');
     renderCart();
     
     await Promise.all([loadProducts(), loadCustomers(), loadSuppliers(), loadDashboard(), loadFinance()]);
@@ -507,12 +529,12 @@ $('savePurchase').onclick = async () => {
   const invalidCartItem = state.purchaseCart.find(item => { const product = state.products.find(p => String(p.id) === String(item.id)); return !product || !sameSupplier(product.supplier, supplierForSave); });
   if (invalidCartItem) return alert('Daftar pembelian berisi barang dari pemasok lain. Hapus barang tersebut atau pilih kembali pemasok yang sesuai.');
   
-  let tanggalJatuhTempo = '';
+  let tenorHari = 0, tanggalJatuhTempo = '';
   if ($('purchaseMethod').value === 'Utang') {
-    const due = prompt('Tanggal jatuh tempo hutang (YYYY-MM-DD). Kosongkan jika belum ditentukan:', '');
-    if (due === null) return;
-    tanggalJatuhTempo = due.trim();
-    if (tanggalJatuhTempo && !/^\d{4}-\d{2}-\d{2}$/.test(tanggalJatuhTempo)) return alert('Format tanggal jatuh tempo harus YYYY-MM-DD.');
+    tenorHari = Number($('purchaseTenor').value || 0);
+    if (!Number.isInteger(tenorHari) || tenorHari < 1) { alert('Tenor hutang wajib diisi dengan jumlah hari minimal 1.'); $('purchaseTenor').focus(); return; }
+    tanggalJatuhTempo = $('purchaseDueDate').value;
+    if (!tanggalJatuhTempo) { alert('Tanggal jatuh tempo belum terbentuk. Periksa tenor pembayaran.'); return; }
   }
   const btn = $('savePurchase');
   btn.disabled = true;
@@ -523,13 +545,13 @@ $('savePurchase').onclick = async () => {
       namaSupplier: $('supplierName').value.trim(),
       metodeBayar: $('purchaseMethod').value,
       catatan: $('purchaseNote').value.trim(),
-      tanggalJatuhTempo,
+      tenorHari, tanggalJatuhTempo,
       items: state.purchaseCart
     });
     
     state.purchaseCart = [];
     renderPurchaseCart();
-    $('purchaseNote').value = '';
+    $('purchaseNote').value = ''; $('purchaseTenor').value = ''; $('purchaseDueDate').value = ''; $('purchaseTenorWrap').classList.add('hidden');
     $('supplierName').value = '';
     if ($('supplierSearchResults')) { $('supplierSearchResults').innerHTML = ''; $('supplierSearchResults').classList.add('hidden'); }
     clearPurchaseProductSelection(true);
@@ -696,7 +718,7 @@ async function loadFinance() {
 function renderFinanceTable(type, rows, targetId) {
   const el = $(targetId);
   if (!rows.length) { el.innerHTML = '<p class="muted">Belum ada data.</p>'; return; }
-  el.innerHTML = `<table class="finance-table"><thead><tr><th>Tanggal</th><th>Nama</th><th>Jumlah</th><th>Jml pembayaran</th><th>Sisa</th><th>Jatuh Tempo</th><th>Tanggal Bayar</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.tanggal)}</td><td>${esc(r.nama)}</td><td>${rupiah(r.total)}</td><td>${rupiah(r.dibayar)}</td><td>${rupiah(r.sisa)}</td><td>${esc(r.jatuhTempo || '—')}</td><td>${esc(r.tanggalBayar || '—')}</td><td>${esc(normalizeFinanceStatus(r.status, r.dibayar, r.sisa))}</td><td>${Number(r.sisa) > 0 ? `<button type="button" class="secondary" data-finance-type="${type}" data-finance-id="${esc(r.id)}" data-finance-remain="${Number(r.sisa)}">Bayar</button>` : '—'}</td></tr>`).join('')}</tbody></table>`;
+  el.innerHTML = `<table class="finance-table"><thead><tr><th>Tanggal</th><th>Nama</th><th>Jumlah</th><th>Jml pembayaran</th><th>Sisa</th><th>Tenor (hari)</th><th>Jatuh Tempo</th><th>Tanggal Bayar</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.tanggal)}</td><td>${esc(r.nama)}</td><td>${rupiah(r.total)}</td><td>${rupiah(r.dibayar)}</td><td>${rupiah(r.sisa)}</td><td>${esc(r.tenorHari || '—')}</td><td>${esc(r.jatuhTempo || '—')}</td><td>${esc(r.tanggalBayar || '—')}</td><td>${esc(normalizeFinanceStatus(r.status, r.dibayar, r.sisa))}</td><td>${Number(r.sisa) > 0 ? `<button type="button" class="secondary" data-finance-type="${type}" data-finance-id="${esc(r.id)}" data-finance-remain="${Number(r.sisa)}">Bayar</button>` : '—'}</td></tr>`).join('')}</tbody></table>`;
   el.querySelectorAll('[data-finance-id]').forEach(btn => btn.onclick = async () => {
     const remain = Number(btn.dataset.financeRemain);
     const raw = prompt(`Masukkan pembayaran untuk ${btn.dataset.financeId}. Sisa tagihan ${rupiah(remain)}:`, String(remain));
