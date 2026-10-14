@@ -3,7 +3,7 @@
  * Isi API_URL dengan URL Web App Apps Script setelah deployment. 
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwIX-_eNoWcfPNqYAQMLXe0i_7CUAfkyXLNSA30SGY6BBTfA4e10GAVj1vi0qqRppdW3g/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyXKpmyNfzIXf30wv7QqyHyfW4bcjCCqMA6VoJv-GYrY5XjnlR9OAFZWPyfdoVqLE82/exec';
 // Versi cache frontend: naikkan angka ini setiap kali file diperbarui.
 
 const $ = id => document.getElementById(id);
